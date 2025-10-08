@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Bot, User, Send, Sparkles, TrendingUp, AlertTriangle, Lightbulb, Brain, Target, BarChart3 } from "lucide-react"
+import { Bot, User, Send, Sparkles, TrendingUp, AlertTriangle, Lightbulb, Brain, Target, BarChart3, Edit } from "lucide-react"
 import { useChatHistory } from "@/lib/use-chat-history"
 
 interface Message {
@@ -28,6 +28,8 @@ interface AIChatAssistantProps {
 export function AIChatAssistant({ coinData, portfolioData }: AIChatAssistantProps) {
   const { messages, setMessages, appendMessage, clearHistory } = useChatHistory()
   const [input, setInput] = useState("")
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
@@ -86,10 +88,24 @@ export function AIChatAssistant({ coinData, portfolioData }: AIChatAssistantProp
 
   const handleSubmit = async () => {
     if (!input.trim() || isLoading) return
-    appendMessage({ role: "user", content: input })
-    const asked = input
-    setInput("")
-    setIsLoading(true)
+  // If editing an existing user message, update it; else append a new one
+  if (editingMessageId) {
+    // Replace the user's message content and remove the assistant reply that follows it (if any)
+    const next = [...(messages || [])]
+    const idx = next.findIndex((m) => m.id === editingMessageId)
+    if (idx !== -1) {
+      next[idx] = { ...next[idx], content: input }
+      if (idx + 1 < next.length && next[idx + 1].role === "assistant") {
+        next.splice(idx + 1, 1)
+      }
+    }
+    setMessages(next)
+  } else {
+    appendMessage({ role: "user", content: input, timestamp: new Date().toISOString() })
+  }
+  const asked = input
+  setInput("")
+  setIsLoading(true)
     setError(null)
 
     try {
@@ -137,11 +153,13 @@ export function AIChatAssistant({ coinData, portfolioData }: AIChatAssistantProp
           role: "assistant",
           content:
             "Hello. I'm unable to generate a detailed answer right now. Please try rephrasing your question or try again shortly.",
+          timestamp: new Date().toISOString(),
         })
       } else {
         appendMessage({
           role: "assistant",
           content: text,
+          timestamp: new Date().toISOString(),
           analysis: {
             sentiment,
             confidence,
@@ -160,9 +178,11 @@ export function AIChatAssistant({ coinData, portfolioData }: AIChatAssistantProp
         role: "assistant",
         content:
           "I apologize for the inconvenience. I'm experiencing technical difficulties at the moment. Please try again shortly.",
+        timestamp: new Date().toISOString(),
       })
     } finally {
       setIsLoading(false)
+      setEditingMessageId(null)
     }
   }
 
@@ -226,6 +246,29 @@ export function AIChatAssistant({ coinData, portfolioData }: AIChatAssistantProp
                     )}
                     <div className="flex-1">
                       <div className="text-sm whitespace-pre-line">{message.content}</div>
+
+                      {/* show timestamp for messages */}
+                      <div className={`text-xs mt-1 ${message.role === "user" ? "text-black" : "text-gray-400"}`}>
+                        {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : ""}
+                      </div>
+
+                      {message.role === "user" && (
+                        <div className="mt-2 flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingMessageId(message.id)
+                              setInput(message.content)
+                              inputRef.current?.focus()
+                            }}
+                            className="text-xs text-green-300 hover:bg-green-500/10"
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                      )}
 
                       {message.analysis && message.content.length > 50 && (
                         <div className="mt-3 pt-3 border-t border-gray-600">
@@ -293,12 +336,26 @@ export function AIChatAssistant({ coinData, portfolioData }: AIChatAssistantProp
           className="flex space-x-2"
         >
           <Input
+            ref={(el) => { inputRef.current = el }}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about current market conditions, trading opportunities, or specific coins..."
             className="bg-gray-800 border-green-500/20 text-white placeholder-gray-400"
             disabled={isLoading}
           />
+          {editingMessageId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditingMessageId(null)
+                setInput("")
+              }}
+              className="text-xs text-red-400"
+            >
+              Cancel
+            </Button>
+          )}
           <Button type="submit" disabled={!input.trim() || isLoading} className="crypto-button">
             <Send className="h-4 w-4" />
           </Button>

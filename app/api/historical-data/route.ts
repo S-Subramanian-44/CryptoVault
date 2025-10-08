@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const API_KEY = "CG-ThfFzJogGF5EYmke1ALvPg8v"
+sk-
 const BASE_URL = "https://api.coingecko.com/api/v3"
 const PY_BACKEND_URL = process.env.PY_BACKEND_URL
 

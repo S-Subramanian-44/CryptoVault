@@ -45,7 +45,18 @@ export function useChatHistory() {
       createdAt: Date.now(),
       ...msg,
     }
-    setMessages([...(messages || []), item])
+
+    // Use mutate updater to avoid race conditions across multiple components
+    // that may call appendMessage simultaneously. This ensures we always
+    // append to the latest array stored in SWR instead of overwriting.
+    mutate(
+      CHAT_KEY,
+      (current: ChatMessage[] | undefined) => {
+        const now = current || []
+        return [...now, item]
+      },
+      false
+    )
   }
 
   const replaceLastAssistant = (content: string) => {

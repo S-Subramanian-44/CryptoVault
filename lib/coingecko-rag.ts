@@ -1,5 +1,5 @@
 const BASE_URL = "https://api.coingecko.com/api/v3"
-const API_KEY = "CG-ThfFzJogGF5EYmke1ALvPg8v"
+const API_KEY = process.env.API_KEY
 
 export interface CoinGeckoRAGData {
   topCoins: Array<{

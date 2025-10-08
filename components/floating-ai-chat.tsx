@@ -23,6 +23,7 @@ import {
   Maximize2,
   X,
   MessageCircle,
+  Edit,
 } from "lucide-react"
 
 interface Message {
@@ -42,6 +43,8 @@ export function FloatingAIChat() {
   const [isMinimized, setIsMinimized] = useState(false)
   const { messages, setMessages, appendMessage, clearHistory } = useChatHistory()
   const [input, setInput] = useState("")
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [mounted, setMounted] = useState(false)
@@ -132,7 +135,6 @@ export function FloatingAIChat() {
       }
 
       appendMessage({
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         role: "assistant",
         content: text,
         timestamp: new Date().toISOString(),
@@ -148,7 +150,6 @@ export function FloatingAIChat() {
     } catch (error) {
       console.error("[v0] Error getting AI response:", error)
       appendMessage({
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         role: "assistant",
         content:
           "I apologize for the inconvenience. I'm currently experiencing technical difficulties. Please try again in a moment.",
@@ -160,7 +161,20 @@ export function FloatingAIChat() {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
 
-    appendMessage({ role: "user", content: input, timestamp: new Date().toISOString() })
+    // If editing an existing user message, update it in history; otherwise append
+    if (editingMessageId) {
+      const next = [...(messages || [])]
+      const idx = next.findIndex((m) => m.id === editingMessageId)
+      if (idx !== -1) {
+        next[idx] = { ...next[idx], content: input }
+        if (idx + 1 < next.length && next[idx + 1].role === "assistant") {
+          next.splice(idx + 1, 1)
+        }
+      }
+      setMessages(next)
+    } else {
+      appendMessage({ role: "user", content: input, timestamp: new Date().toISOString() })
+    }
     const asked = input
     setInput("")
     setIsLoading(true)
@@ -169,6 +183,7 @@ export function FloatingAIChat() {
       await generateAIResponse(asked)
     } finally {
       setIsLoading(false)
+      setEditingMessageId(null)
     }
   }
 
@@ -199,7 +214,7 @@ export function FloatingAIChat() {
   // Floating chat button when closed
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-20 right-6 z-50">
         <Button
           onClick={toggleChat}
           className="relative h-14 w-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all duration-300 group"
@@ -300,6 +315,28 @@ export function FloatingAIChat() {
                         <div className="flex-1">
                           <div className="whitespace-pre-line">{message.content}</div>
 
+                          <div className={`text-xs mt-1 ${message.role === "user" ? "text-black" : "text-gray-400"}`}>
+                            {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : ""}
+                          </div>
+
+                          {message.role === "user" && (
+                            <div className="mt-1 flex justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingMessageId(message.id)
+                                  setInput(message.content)
+                                  inputRef.current?.focus()
+                                }}
+                                className="text-xs text-purple-300 hover:bg-purple-500/10"
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                            </div>
+                          )}
+
                           {message.analysis && (
                             <div className="mt-2 pt-2 border-t border-gray-600">
                               <div className="flex items-center justify-between mb-1">
@@ -333,7 +370,7 @@ export function FloatingAIChat() {
                           )}
 
                           <div className="text-xs text-gray-500 mt-1">
-                            {new Date(message.timestamp).toLocaleTimeString()}
+                            {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : ""}
                           </div>
                         </div>
                       </div>
@@ -368,6 +405,7 @@ export function FloatingAIChat() {
             {/* Input */}
             <div className="flex space-x-2">
               <Input
+                ref={(el) => { inputRef.current = el }}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about crypto, time, or general questions..."
@@ -375,6 +413,19 @@ export function FloatingAIChat() {
                 className="bg-gray-800 border-purple-500/30 text-white placeholder-gray-400 text-xs h-8 focus:border-purple-500"
                 disabled={isLoading}
               />
+              {editingMessageId && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingMessageId(null)
+                    setInput("")
+                  }}
+                  className="text-xs text-red-400"
+                >
+                  Cancel
+                </Button>
+              )}
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
