@@ -55,7 +55,6 @@
     "react-day-picker": "latest",
     "react-dom": "^19",
     "react-hook-form": "latest",
-    "react-is": "^19.2.0",
     "react-resizable-panels": "latest",
     "recharts": "latest",
     "rss-parser": "latest",
@@ -64,7 +63,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "latest",
-    "zod": "3.25.67"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
