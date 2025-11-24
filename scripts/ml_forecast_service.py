@@ -294,8 +294,24 @@ if __name__ == "__main__":
     from pydantic import BaseModel
     from typing import List, Dict, Any
     import uvicorn
+    from fastapi.middleware.cors import CORSMiddleware
+    import os
     
     app = FastAPI(title="Crypto ML Forecasting Service")
+    # Configure CORS for the standalone service. Set `ML_ALLOWED_ORIGINS` to
+    # a comma-separated list of origins (or `*` to allow all).
+    allowed = os.environ.get("ML_ALLOWED_ORIGINS", "*")
+    if allowed == "*" or allowed.strip() == "":
+        origins = ["*"]
+    else:
+        origins = [o.strip() for o in allowed.split(",") if o.strip()]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     
     class ForecastRequest(BaseModel):
         coin_id: str
