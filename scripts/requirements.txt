@@ -1,4 +1,5 @@
-numpy==1.26.5
+﻿# Requirements for Python 3.11.9
+numpy==1.26.4
 pandas==2.1.2
 scikit-learn==1.3.2
 statsmodels==0.14.2
@@ -10,4 +11,3 @@ httpx==0.24.1
 pymongo==4.4.0
 dnspython==2.3.0
 python-dotenv==1.0.0
-
