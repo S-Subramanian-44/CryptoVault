@@ -341,6 +341,20 @@ async def health_check():
     return {"status": "healthy", "service": "crypto-ml-forecasting"}
 
 
+@app.get("/")
+async def root():
+    """Simple root endpoint to show service is up and provide links."""
+    return {
+        "service": "Crypto ML Forecasting Service",
+        "status": "running",
+        "endpoints": {
+            "health": "/health",
+            "forecast (POST)": "/forecast",
+        },
+        "note": "Use POST /forecast with JSON payload. See /health for quick check."
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
