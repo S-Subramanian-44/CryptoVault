@@ -36,7 +36,10 @@ async function callPythonMLService(data: ForecastRequest): Promise<ForecastRespo
     // In a real implementation, this would call your Python ML service
     // For now, we'll simulate the response with more sophisticated logic
 
-    const response = await fetch("http://localhost:8000/forecast", {
+    const backendBase = process.env.ML_SERVICE_URL || process.env.PY_BACKEND_URL || "http://localhost:8000"
+    const endpoint = backendBase.replace(/\/$/, "") + "/forecast"
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

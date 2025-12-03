@@ -13,7 +13,8 @@ type ForecastReq = {
 }
 
 async function callPython(data: ForecastReq) {
-  const url = process.env.PY_BACKEND_URL || "http://localhost:8000/forecast"
+  const backendBase = process.env.ML_SERVICE_URL || process.env.PY_BACKEND_URL || "http://localhost:8000"
+  const url = backendBase.replace(/\/$/, "") + "/forecast"
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
