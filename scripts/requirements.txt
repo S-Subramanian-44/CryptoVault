@@ -6,7 +6,7 @@ statsmodels==0.14.2
 tensorflow==2.14.1
 fastapi==0.103.1
 uvicorn[standard]==0.23.2
-pydantic==2.3.2
+pydantic==2.3.0
 httpx==0.24.1
 pymongo==4.4.0
 dnspython==2.3.0
