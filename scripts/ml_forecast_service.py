@@ -288,54 +288,62 @@ class CryptoForecaster:
             }
         }
 
-# FastAPI service (if running as standalone service)
-if __name__ == "__main__":
-    from fastapi import FastAPI, HTTPException
-    from pydantic import BaseModel
-    from typing import List, Dict, Any
-    import uvicorn
-    from fastapi.middleware.cors import CORSMiddleware
-    import os
-    
-    app = FastAPI(title="Crypto ML Forecasting Service")
-    # Configure CORS for the standalone service. Set `ML_ALLOWED_ORIGINS` to
-    # a comma-separated list of origins (or `*` to allow all).
-    allowed = os.environ.get("ML_ALLOWED_ORIGINS", "*")
-    if allowed == "*" or allowed.strip() == "":
-        origins = ["*"]
-    else:
-        origins = [o.strip() for o in allowed.split(",") if o.strip()]
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Dict, Any
+from fastapi.middleware.cors import CORSMiddleware
+import os
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    
-    class ForecastRequest(BaseModel):
-        coin_id: str
-        symbol: str
-        historical_data: List[Dict[str, Any]]
-        current_price: float
-        forecast_days: int = 30
-    
-    @app.post("/forecast")
-    async def generate_forecast(request: ForecastRequest):
-        try:
-            forecaster = CryptoForecaster()
-            result = forecaster.generate_forecast(
-                request.historical_data,
-                request.current_price,
-                request.forecast_days
-            )
-            return result
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-    
-    @app.get("/health")
-    async def health_check():
-        return {"status": "healthy", "service": "crypto-ml-forecasting"}
-    
-    print("🚀 Starting Crypto ML Forecasting Service on port 8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# Module-level FastAPI app so ASGI servers (uvicorn) can import `app`
+app = FastAPI(title="Crypto ML Forecasting Service")
+
+# Configure CORS. Set `ML_ALLOWED_ORIGINS` to a comma-separated list
+# of origins (or `*` to allow all).
+allowed = os.environ.get("ML_ALLOWED_ORIGINS", "*")
+if allowed == "*" or allowed.strip() == "":
+    origins = ["*"]
+else:
+    origins = [o.strip() for o in allowed.split(",") if o.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class ForecastRequest(BaseModel):
+    coin_id: str
+    symbol: str
+    historical_data: List[Dict[str, Any]]
+    current_price: float
+    forecast_days: int = 30
+
+
+@app.post("/forecast")
+async def generate_forecast(request: ForecastRequest):
+    try:
+        forecaster = CryptoForecaster()
+        result = forecaster.generate_forecast(
+            request.historical_data,
+            request.current_price,
+            request.forecast_days,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "crypto-ml-forecasting"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+
+    print(f"🚀 Starting Crypto ML Forecasting Service on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)
